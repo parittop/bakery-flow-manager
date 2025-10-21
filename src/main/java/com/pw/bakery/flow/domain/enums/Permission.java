@@ -1,4 +1,4 @@
-package com.pw.bakery.flow.domain.enum;
+package com.pw.bakery.flow.domain.enums;
 
 /**
  * Permission enum for fine-grained access control in bakery system

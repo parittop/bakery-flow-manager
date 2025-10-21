@@ -14,4 +14,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 public class JpaConfig {
     // JPA auditing configuration will be handled by AuditorProvider bean
     // Repository scanning enabled for com.pw.bakery.flow.repository package
+
+    // The AuditorProvider bean is defined in AuditorProvider.java
+    // This configuration enables automatic setting of createdAt, updatedAt, createdBy, and updatedBy fields
 }
