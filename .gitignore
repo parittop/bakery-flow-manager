@@ -35,7 +35,9 @@ build/
 ### GitGuardian ###
 # Ignore GitGuardian warnings for configuration files containing default credentials
 .gitguardian.yml
-# Ignore test/development configuration files with default credentials
-*application*.properties
-*application*.yml
-*application*.yaml
+.gitguardian.yaml
+# GitGuardian: Ignore patterns for development credentials
+#gitguardian: ignore(admin123,manager123,baker123,cashier123,password123)
+#gitguardian: ignore(admin@bakery.com,manager@bakery.com,baker@bakery.com,cashier@bakery.com)
+#gitguardian: ignore(0812345678,0823456789,0834567890,0845678901)
+#gitguardian: ignore(EMP001,EMP002,EMP003,EMP004)
