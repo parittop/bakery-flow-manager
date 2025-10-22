@@ -1,13 +1,20 @@
 package com.pw.bakery.flow.config;
 
+import com.pw.bakery.flow.security.JwtAuthenticationFilter;
+import com.pw.bakery.flow.security.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
  * Security configuration for Bakery Flow Manager
@@ -18,6 +25,9 @@ import org.springframework.security.web.SecurityFilterChain;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CustomUserDetailsService userDetailsService;
+
     /**
      * Password encoder bean for encrypting user passwords
      * Uses BCrypt with default strength (10)
@@ -27,6 +37,22 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    @Bean
+    public AuthenticationManager authenticationManager(
+        AuthenticationConfiguration config
+    ) throws Exception {
+        return config.getAuthenticationManager();
+    }
+
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authProvider =
+            new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return authProvider;
+    }
+
     /**
      * Security filter chain configuration
      * Configures HTTP security rules and authentication
@@ -34,36 +60,37 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .authorizeHttpRequests(authz -> authz
-                // Allow H2 console access in development
-                .requestMatchers("/h2-console/**").permitAll()
-                // Allow actuator endpoints
-                .requestMatchers("/actuator/**").permitAll()
-                // Allow static resources
-                .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
-                // Allow API documentation
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                // All other requests need authentication
-                .anyRequest().authenticated()
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(session ->
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
-            .formLogin(form -> form
-                .loginPage("/login")
-                .defaultSuccessUrl("/dashboard")
-                .permitAll()
+            .authorizeHttpRequests(authz ->
+                authz
+                    // Public authentication endpoints
+                    .requestMatchers("/api/auth/**")
+                    .permitAll()
+                    // Allow H2 console access in development
+                    .requestMatchers("/h2-console/**")
+                    .permitAll()
+                    // Allow actuator endpoints
+                    .requestMatchers("/actuator/**")
+                    .permitAll()
+                    // Allow static resources
+                    .requestMatchers("/css/**", "/js/**", "/images/**")
+                    .permitAll()
+                    // Allow API documentation
+                    .requestMatchers("/swagger-ui/**", "/v3/api-docs/**")
+                    .permitAll()
+                    // Allow error page
+                    .requestMatchers("/error")
+                    .permitAll()
+                    // All other requests need authentication
+                    .anyRequest()
+                    .authenticated()
             )
-            .logout(logout -> logout
-                .logoutUrl("/logout")
-                .logoutSuccessUrl("/login?logout")
-                .permitAll()
-            )
-            // Disable CSRF for H2 console
-            .csrf(csrf -> csrf
-                .ignoringRequestMatchers("/h2-console/**")
-            )
+            .authenticationProvider(authenticationProvider())
             // Allow frames for H2 console
-            .headers(headers -> headers
-                .frameOptions().sameOrigin()
-            );
+            .headers(headers -> headers.frameOptions().disable());
 
         return http.build();
     }

@@ -1,12 +1,15 @@
 package com.pw.bakery.flow.domain.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import java.util.HashSet;
 import java.util.Set;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
 /**
  * Role entity for user role management in bakery system
@@ -14,7 +17,10 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "roles")
-@Data
+@Getter
+@Setter
+@EqualsAndHashCode(exclude = "users")
+@ToString(exclude = "users")
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -31,16 +37,22 @@ public class Role {
     @Column(length = 500)
     private String description;
 
-    @ManyToMany(mappedBy = "roles")
-    private Set<User> users = new HashSet<>();
+    @ManyToMany(mappedBy = "roles", fetch = FetchType.LAZY)
+    private Set<User> users;
 
     /**
      * Available roles in the bakery system
      */
     public enum RoleName {
         ADMIN("Administrator", "Full system access including user management"),
-        MANAGER("Manager", "Can manage operations, inventory, and view reports"),
-        BAKER("Baker", "Can manage production workflows and view assigned tasks"),
+        MANAGER(
+            "Manager",
+            "Can manage operations, inventory, and view reports"
+        ),
+        BAKER(
+            "Baker",
+            "Can manage production workflows and view assigned tasks"
+        ),
         CASHIER("Cashier", "Can handle orders and payments"),
         INVENTORY("Inventory Staff", "Can manage stock and inventory");
 

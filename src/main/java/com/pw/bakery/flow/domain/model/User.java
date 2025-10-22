@@ -1,6 +1,11 @@
 package com.pw.bakery.flow.domain.model;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -8,15 +13,6 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-
-import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * User entity for bakery system authentication and authorization
@@ -29,7 +25,7 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
-public class User implements UserDetails {
+public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -57,15 +53,19 @@ public class User implements UserDetails {
     private String employeeId;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean enabled = true;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean accountNonExpired = true;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean accountNonLocked = true;
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean credentialsNonExpired = true;
 
     @ManyToMany(fetch = FetchType.EAGER)
@@ -94,39 +94,28 @@ public class User implements UserDetails {
     @Column(name = "updated_by")
     private Long updatedBy;
 
-    // UserDetails implementation
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return roles.stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().name()))
-                .collect(Collectors.toSet());
-    }
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return accountNonExpired;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return accountNonLocked;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return credentialsNonExpired;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return enabled;
-    }
-
     /**
      * Get full name of the user
      */
     public String getFullName() {
         return String.format("%s %s", firstName, lastName);
+    }
+
+    // Getter methods for boolean fields
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public boolean isAccountNonExpired() {
+        return accountNonExpired;
+    }
+
+    public boolean isAccountNonLocked() {
+        return accountNonLocked;
+    }
+
+    public boolean isCredentialsNonExpired() {
+        return credentialsNonExpired;
     }
 
     /**
@@ -149,17 +138,17 @@ public class User implements UserDetails {
      * Check if user has specific role
      */
     public boolean hasRole(Role.RoleName roleName) {
-        return roles.stream()
-                .anyMatch(role -> role.getName() == roleName);
+        return roles.stream().anyMatch(role -> role.getName() == roleName);
     }
 
     /**
      * Check if user has any of the specified roles
      */
     public boolean hasAnyRole(Role.RoleName... roleNames) {
-        Set<Role.RoleName> userRoles = roles.stream()
-                .map(Role::getName)
-                .collect(Collectors.toSet());
+        Set<Role.RoleName> userRoles = roles
+            .stream()
+            .map(Role::getName)
+            .collect(Collectors.toSet());
 
         for (Role.RoleName roleName : roleNames) {
             if (userRoles.contains(roleName)) {
