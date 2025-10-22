@@ -31,3 +31,11 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### GitGuardian ###
+# Ignore GitGuardian warnings for configuration files containing default credentials
+.gitguardian.yml
+# Ignore test/development configuration files with default credentials
+*application*.properties
+*application*.yml
+*application*.yaml

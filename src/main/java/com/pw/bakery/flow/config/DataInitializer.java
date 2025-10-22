@@ -1,5 +1,6 @@
 package com.pw.bakery.flow.config;
 
+import com.pw.bakery.flow.config.properties.DefaultUsersProperties;
 import com.pw.bakery.flow.domain.model.Role;
 import com.pw.bakery.flow.domain.model.User;
 import com.pw.bakery.flow.repository.RoleRepository;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Data initializer component for seeding initial data
  * Runs automatically on application startup for specific profiles
+ * Now uses configuration properties instead of hardcoded credentials
  */
 @Slf4j
 @Configuration
@@ -28,6 +30,7 @@ public class DataInitializer {
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final DefaultUsersProperties defaultUsersProperties;
 
     /**
      * Initialize data for test profile
@@ -52,7 +55,9 @@ public class DataInitializer {
                 log.info("Test admin user created successfully");
 
                 // Verify user was created
-                boolean userExists = userRepository.existsByUsername("admin");
+                boolean userExists = userRepository.existsByUsername(
+                    defaultUsersProperties.getAdmin().getUsername()
+                );
                 log.info("Admin user verification - exists: {}", userExists);
 
                 log.info("Test data initialization completed!");
@@ -121,13 +126,16 @@ public class DataInitializer {
     }
 
     /**
-     * Create test admin user
+     * Create test admin user using configuration properties
      */
     @Transactional
     private void createTestAdminUser() {
         try {
             if (userRepository.count() == 0) {
                 log.info("Creating test admin user...");
+
+                DefaultUsersProperties.UserProperties adminConfig =
+                    defaultUsersProperties.getAdmin();
 
                 Role adminRole = roleRepository
                     .findByName(Role.RoleName.ADMIN)
@@ -136,13 +144,13 @@ public class DataInitializer {
                     );
 
                 User admin = User.builder()
-                    .username("admin")
-                    .email("admin@bakery.com")
-                    .password(passwordEncoder.encode("admin123"))
-                    .firstName("Admin")
-                    .lastName("User")
-                    .employeeId("ADMIN001")
-                    .phoneNumber("0812345678")
+                    .username(adminConfig.getUsername())
+                    .email(adminConfig.getEmail())
+                    .password(passwordEncoder.encode(adminConfig.getPassword()))
+                    .firstName(adminConfig.getFirstName())
+                    .lastName(adminConfig.getLastName())
+                    .employeeId(adminConfig.getEmployeeId())
+                    .phoneNumber(adminConfig.getPhoneNumber())
                     .enabled(true)
                     .roles(new HashSet<>(Set.of(adminRole)))
                     .createdAt(LocalDateTime.now())
@@ -150,11 +158,15 @@ public class DataInitializer {
                     .build();
 
                 userRepository.save(admin);
-                log.info("Created test admin user: admin/admin123");
+                log.info(
+                    "Created test admin user: {}/{}",
+                    adminConfig.getUsername(),
+                    adminConfig.getPassword()
+                );
 
                 // Verify the user was actually saved
                 User savedUser = userRepository
-                    .findByUsername("admin")
+                    .findByUsername(adminConfig.getUsername())
                     .orElse(null);
                 if (savedUser != null) {
                     log.info("✅ Admin user successfully saved to database");
