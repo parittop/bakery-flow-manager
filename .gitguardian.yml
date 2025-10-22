@@ -1,0 +1,11 @@
+# GitGuardian ignore policy for bakery-flow-manager
+# Ignore development credentials in configuration files
+
+version: 2
+ignore:
+  # Ignore default credentials in application.properties
+  - name: "Development credentials"
+    description: "Default credentials for development only"
+    paths:
+      - "src/main/resources/application.properties"
+    all: true

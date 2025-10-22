@@ -33,9 +33,6 @@ build/
 .vscode/
 
 ### GitGuardian ###
-# Ignore GitGuardian warnings for configuration files containing default credentials
-.gitguardian.yml
-.gitguardian.yaml
 # GitGuardian: Ignore patterns for development credentials
 #gitguardian: ignore(admin123,manager123,baker123,cashier123,password123)
 #gitguardian: ignore(admin@bakery.com,manager@bakery.com,baker@bakery.com,cashier@bakery.com)
