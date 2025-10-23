@@ -94,7 +94,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         ) {
             return headerAuth.substring(
                 jwtProperties.getTokenPrefix().length()
-            );
+            ).trim();
         }
 
         // Also try to get token from cookie
@@ -134,32 +134,4 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return null;
     }
 
-    /**
-     * Check if request should be skipped from JWT validation
-     */
-    private boolean shouldSkip(HttpServletRequest request) {
-        String path = request.getRequestURI();
-
-        // Skip authentication for public endpoints
-        return (
-            path.startsWith("/api/auth/") ||
-            path.startsWith("/api/public/") ||
-            path.startsWith("/actuator/") ||
-            path.startsWith("/h2-console/") ||
-            path.startsWith("/swagger-ui/") ||
-            path.startsWith("/v3/api-docs/") ||
-            path.startsWith("/webjars/") ||
-            path.startsWith("/swagger-resources/") ||
-            path.startsWith("/configuration/") ||
-            path.startsWith("/v2/api-docs/") ||
-            path.equals("/favicon.ico") ||
-            path.equals("/error")
-        );
-    }
-
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request)
-        throws ServletException {
-        return shouldSkip(request);
-    }
 }

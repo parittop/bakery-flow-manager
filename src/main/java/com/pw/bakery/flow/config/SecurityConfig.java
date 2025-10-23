@@ -15,6 +15,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Security configuration for Bakery Flow Manager
@@ -54,12 +60,34 @@ public class SecurityConfig {
     }
 
     /**
+     * CORS configuration source bean
+     * Defines allowed origins, methods, and headers for cross-origin requests.
+     * This configuration is permissive and suitable for development.
+     * For production, it's recommended to restrict origins to specific domains.
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of("*")); // Allow all origins
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
+        configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
+    /**
      * Security filter chain configuration
      * Configures HTTP security rules and authentication
      */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -67,7 +95,10 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz ->
                 authz
                     // Public authentication endpoints
-                    .requestMatchers("/api/auth/**")
+                	.requestMatchers("/api/auth/login", "/api/auth/refresh-token", "/api/auth/register")
+                    .permitAll()
+                    // Allow user registration
+                    .requestMatchers("/api/users/register")
                     .permitAll()
                     // Allow H2 console access in development
                     .requestMatchers("/h2-console/**")
@@ -89,8 +120,10 @@ public class SecurityConfig {
                     .authenticated()
             )
             .authenticationProvider(authenticationProvider())
-            // Allow frames for H2 console
-            .headers(headers -> headers.frameOptions().disable());
+            .addFilterBefore(
+                jwtAuthenticationFilter,
+                UsernamePasswordAuthenticationFilter.class
+            ) ;
 
         return http.build();
     }

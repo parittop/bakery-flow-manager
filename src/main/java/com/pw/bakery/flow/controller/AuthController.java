@@ -343,6 +343,12 @@ public class AuthController {
         @org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.core.userdetails.UserDetails userDetails
     ) {
         try {
+            if (userDetails == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                    ApiResponse.unauthorized("User not authenticated")
+                );
+            }
+
             var user = authService.getUserByUsername(userDetails.getUsername());
             Map<String, Object> userResponse = new java.util.HashMap<>();
             userResponse.put("id", user.getId());

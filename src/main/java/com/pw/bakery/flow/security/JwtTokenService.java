@@ -5,6 +5,9 @@ import com.pw.bakery.flow.domain.model.User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashMap;
@@ -98,15 +101,18 @@ public class JwtTokenService {
         String subject,
         long expiration
     ) {
-        Instant now = Instant.now();
-        Instant validity = now.plus(expiration, ChronoUnit.MILLIS);
+        // Use LocalDateTime for consistent local time handling
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime validity = now.plus(expiration, ChronoUnit.MILLIS);
 
         return Jwts.builder()
             .claims(claims)
             .subject(subject)
             .issuer(jwtProperties.getIssuer())
-            .issuedAt(Date.from(now))
-            .expiration(Date.from(validity))
+            .issuedAt(Date.from(now.atZone(ZoneId.systemDefault()).toInstant()))
+            .expiration(
+                Date.from(validity.atZone(ZoneId.systemDefault()).toInstant())
+            )
             .signWith(getSigningKey())
             .compact();
     }
@@ -233,9 +239,14 @@ public class JwtTokenService {
     public boolean isTokenExpired(String token) {
         try {
             final Date expiration = extractExpiration(token);
-            return expiration.before(new Date());
+            LocalDateTime expDateTime = LocalDateTime.ofInstant(
+                expiration.toInstant(),
+                ZoneId.systemDefault()
+            );
+            return expDateTime.isBefore(LocalDateTime.now());
         } catch (ExpiredJwtException e) {
-            return true;
+            log.debug("Error checking token expiration: {}", e.getMessage());
+            return true; // Treat invalid tokens as expired
         } catch (JwtException e) {
             log.debug("Error checking token expiration: {}", e.getMessage());
             return true; // Treat invalid tokens as expired
@@ -247,6 +258,31 @@ public class JwtTokenService {
      */
     public long getAccessTokenExpirationMs() {
         return jwtProperties.getAccessTokenExpiration().toMillis();
+    }
+
+    /**
+     * Debug method to check token validation
+     */
+    public void debugTokenValidation(String token) {
+        try {
+            Date expiration = extractExpiration(token);
+            LocalDateTime expDateTime = LocalDateTime.ofInstant(
+                expiration.toInstant(),
+                ZoneId.systemDefault()
+            );
+            LocalDateTime now = LocalDateTime.now();
+
+            log.debug("Token validation debug:");
+            log.debug("  Current time: {}", now);
+            log.debug("  Token expires: {}", expDateTime);
+            log.debug("  Is expired: {}", expDateTime.isBefore(now));
+            log.debug(
+                "  Time until expiry: {}",
+                ChronoUnit.SECONDS.between(now, expDateTime)
+            );
+        } catch (Exception e) {
+            log.debug("Error in token validation debug: {}", e.getMessage());
+        }
     }
 
     /**
